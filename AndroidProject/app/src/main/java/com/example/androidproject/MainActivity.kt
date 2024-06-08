@@ -1,10 +1,13 @@
 package com.example.androidproject
 
+import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
+import android.view.View
+import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -27,6 +30,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mGyroscope: Sensor
     private lateinit var sensorEventListener: SensorEventListener
 
+    private lateinit var chart_button: Button
+    private lateinit var gest_button: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,9 +50,17 @@ class MainActivity : AppCompatActivity() {
 
         progr_bar = findViewById(R.id.progressBar)
 
+        chart_button = findViewById(R.id.graph_button)
+        gest_button = findViewById(R.id.gesture_button)
+
         mSensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)!!
         mGyroscope = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)!!
+
+        chart_button.setOnClickListener{
+            val intent = Intent(this, ChartActivity::class.java)
+            startActivity(intent)
+        }
 
         // Inicjalizacja sensorEventListener
         sensorEventListener = object : SensorEventListener {
