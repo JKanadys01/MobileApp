@@ -1,0 +1,172 @@
+package com.example.laba4
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.laba4.ui.theme.LabA4Theme
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            LabA4Theme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    KierunkiScreen()
+                }
+            }
+        }
+    }
+}
+
+data class DaneKierunku(
+    val id: Int,
+    val nazwa: String,
+    val opisKierunku: String,
+    val iloscMiejsc: Int
+)
+
+class KierunkiViewModel : ViewModel() {
+    private val _kierunkiList = mutableStateListOf<DaneKierunku>()
+    val kierunkiList: SnapshotStateList<DaneKierunku> get() = _kierunkiList
+
+    init {
+        _kierunkiList.addAll(
+            listOf(
+                DaneKierunku(1, "Informatyka II stopnia", "Opis kierunku", 30),
+                DaneKierunku(2, "Automatyka i Robotyka", "Opis kierunku", 25)
+            )
+        )
+    }
+
+    fun dodajKierunek(kierunek: DaneKierunku) {
+        _kierunkiList.add(kierunek)
+    }
+
+    fun usunKierunek(kierunek: DaneKierunku) {
+        _kierunkiList.remove(kierunek)
+    }
+
+    fun aktualizujKierunek(aktualizowanyKierunek: DaneKierunku) {
+        val index = _kierunkiList.indexOfFirst { it.id == aktualizowanyKierunek.id }
+        if (index >= 0) {
+            _kierunkiList[index] = aktualizowanyKierunek
+        }
+    }
+}
+
+@Composable
+fun KierunkiList(
+    kierunkiList: List<DaneKierunku>,
+    onRemove: (DaneKierunku) -> Unit,
+    onEdit: (DaneKierunku) -> Unit
+) {
+    LazyColumn {
+        items(kierunkiList) { kierunek ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = "${kierunek.id}. ${kierunek.nazwa} - ${kierunek.iloscMiejsc} miejsc")
+                IconButton(onClick = { onRemove(kierunek) }) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete")
+                }
+                IconButton(onClick = { onEdit(kierunek) }) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun KierunkiScreen(viewModel: KierunkiViewModel = viewModel()) {
+    var edytowanyKierunek by remember { mutableStateOf<DaneKierunku?>(null) }
+
+    Column {
+        KierunkiList(
+            kierunkiList = viewModel.kierunkiList,
+            onRemove = { viewModel.usunKierunek(it) },
+            onEdit = { edytowanyKierunek = it }
+        )
+        DodajKierunekButton(viewModel, edytowanyKierunek, onEditComplete = { edytowanyKierunek = null })
+    }
+}
+
+@Composable
+fun DodajKierunekButton(
+    viewModel: KierunkiViewModel,
+    edytowanyKierunek: DaneKierunku?,
+    onEditComplete: () -> Unit
+) {
+    var id by remember { mutableStateOf(viewModel.kierunkiList.size + 1) }
+    var nazwa by remember { mutableStateOf("") }
+    var opis by remember { mutableStateOf("") }
+    var iloscMiejsc by remember { mutableStateOf(0) }
+
+    LaunchedEffect(edytowanyKierunek) {
+        if (edytowanyKierunek != null) {
+            id = edytowanyKierunek.id
+            nazwa = edytowanyKierunek.nazwa
+            opis = edytowanyKierunek.opisKierunku
+            iloscMiejsc = edytowanyKierunek.iloscMiejsc
+        }
+    }
+
+    Column {
+        TextField(
+            value = nazwa,
+            onValueChange = { nazwa = it },
+            label = { Text("Nazwa kierunku") }
+        )
+        TextField(
+            value = opis,
+            onValueChange = { opis = it },
+            label = { Text("Opis kierunku") }
+        )
+        TextField(
+            value = iloscMiejsc.toString(),
+            onValueChange = { iloscMiejsc = it.toIntOrNull() ?: 0 },
+            label = { Text("Ilość miejsc") }
+        )
+        Button(onClick = {
+            if (nazwa.isNotEmpty() && opis.isNotEmpty() && iloscMiejsc > 0) {
+                val nowyKierunek = DaneKierunku(id, nazwa, opis, iloscMiejsc)
+                if (edytowanyKierunek == null) {
+                    viewModel.dodajKierunek(nowyKierunek)
+                    id++
+                } else {
+                    viewModel.aktualizujKierunek(nowyKierunek)
+                    onEditComplete()
+                }
+                nazwa = ""
+                opis = ""
+                iloscMiejsc = 0
+            }
+        }) {
+            Text(if (edytowanyKierunek == null) "Dodaj kierunek" else "Aktualizuj kierunek")
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun KierunkiPreview() {
+    LabA4Theme {
+        KierunkiScreen()
+    }
+}
