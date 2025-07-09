@@ -7,7 +7,7 @@ This repository contains a series of labs and project exercises focused on Andro
 
 ### 🔧 Core Projects
 
-**AndroidProject** – Main project with Android-related charts and UI components. It uses the accelerometer, gyroscope, and magnetometer sensors to visualize their behavior in real time on the phone.
+**Project** – Main project with Android-related charts and UI components. It uses the accelerometer, gyroscope, and magnetometer sensors to visualize their behavior in real time on the phone.
 
 ### 🎨 Jetpack Compose
 
