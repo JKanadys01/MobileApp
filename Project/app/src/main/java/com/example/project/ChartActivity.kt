@@ -10,21 +10,20 @@ import android.hardware.SensorManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.Button
-import androidx.core.content.getSystemService
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.formatter.ValueFormatter
 
 class ChartActivity : AppCompatActivity() {
 
-    private lateinit var main_button: Button
-
-    private lateinit var sensorManager: SensorManager
+    private lateinit var mainButton: Button
 
     private var gyroChart: LineChart? = null
     private var accelChart: LineChart? = null
 
+    private lateinit var sensorManager: SensorManager
     private lateinit var mAccelerometer: Sensor
     private lateinit var mGyroscope: Sensor
     private lateinit var sensorEventListener: SensorEventListener
@@ -33,137 +32,39 @@ class ChartActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chart)
 
-        main_button = findViewById(R.id.go_back_button)
-
+        mainButton = findViewById(R.id.go_back_button)
         gyroChart = findViewById(R.id.gyroChart)
         accelChart = findViewById(R.id.accelChart)
 
-        // Inicjalizacja wykresów
-        accelChart!!.data = LineData() // Inicjalizacja danych dla akcelerometru
-        accelChart!!.axisLeft.setDrawLabels(true) // Włączenie rysowania etykiet na osi Y
-        accelChart!!.axisLeft.textColor = Color.WHITE // Ustawienie koloru etykiet na biały
-        val accelXDataSet = LineDataSet(null, "X")
-        val accelYDataSet = LineDataSet(null, "Y")
-        val accelZDataSet = LineDataSet(null, "Z")
-        accelXDataSet.colors = listOf(Color.RED)
-        accelYDataSet.colors = listOf(Color.GREEN)
-        accelZDataSet.colors = listOf(Color.BLUE)
-        accelChart!!.data.addDataSet(accelXDataSet) // Dodanie datasetu dla X
-        accelChart!!.data.addDataSet(accelYDataSet) // Dodanie datasetu dla Y
-        accelChart!!.data.addDataSet(accelZDataSet) // Dodanie datasetu dla Z
-
-        gyroChart!!.data = LineData() // Inicjalizacja danych dla żyroskopu
-        gyroChart!!.axisLeft.setDrawLabels(true) // Włączenie rysowania etykiet na osi Y
-        gyroChart!!.axisLeft.textColor = Color.WHITE // Ustawienie koloru etykiet na biały
-        val gyroXDataSet = LineDataSet(null, "X")
-        val gyroYDataSet = LineDataSet(null, "Y")
-        val gyroZDataSet = LineDataSet(null, "Z")
-        gyroXDataSet.colors = listOf(Color.RED)
-        gyroYDataSet.colors = listOf(Color.GREEN)
-        gyroZDataSet.colors = listOf(Color.BLUE)
-        gyroChart!!.data.addDataSet(gyroXDataSet) // Dodanie datasetu dla X
-        gyroChart!!.data.addDataSet(gyroYDataSet) // Dodanie datasetu dla Y
-        gyroChart!!.data.addDataSet(gyroZDataSet) // Dodanie datasetu dla Z
+        initializeChart(accelChart, "Accelerometer")
+        initializeChart(gyroChart, "Gyroscope")
 
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
         mAccelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)!!
         mGyroscope = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)!!
 
-        main_button.setOnClickListener{
+        mainButton.setOnClickListener {
             val intent = Intent(this, MainActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             startActivity(intent)
+            finish()
         }
 
         sensorEventListener = object : SensorEventListener {
-            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-                // Nie jest potrzebne w tym przypadku
-            }
+            override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
 
             private var sampleCount = 0
-            private val sampleFrequency = 10 // zmniejszenie częstotliwości próbkowania, np. co piątą aktualizację
+            private val sampleFrequency = 1
             private val maxDataPoints = 10
+
             override fun onSensorChanged(event: SensorEvent?) {
                 event?.let {
                     sampleCount++
                     if (sampleCount % sampleFrequency == 0) {
                         if (it.sensor == mAccelerometer) {
-                            val xAccel = it.values[0]
-                            val yAccel = it.values[1]
-                            val zAccel = it.values[2]
-
-                            val accelData = accelChart!!.data
-
-                            if (accelData.dataSetCount > 0) {
-                                val xDataSet = accelData.getDataSetByIndex(0)
-                                if (xDataSet.entryCount >= maxDataPoints) {
-                                    xDataSet.removeFirst()
-                                    for (i in 0 until xDataSet.entryCount) {
-                                        xDataSet.getEntryForIndex(i).x = i.toFloat()
-                                    }
-                                }
-                                accelData.addEntry(Entry(xDataSet.entryCount.toFloat(), xAccel), 0)
-
-                                val yDataSet = accelData.getDataSetByIndex(1)
-                                if (yDataSet.entryCount >= maxDataPoints) {
-                                    yDataSet.removeFirst()
-                                    for (i in 0 until yDataSet.entryCount) {
-                                        yDataSet.getEntryForIndex(i).x = i.toFloat()
-                                    }
-                                }
-                                accelData.addEntry(Entry(yDataSet.entryCount.toFloat(), yAccel), 1)
-
-                                val zDataSet = accelData.getDataSetByIndex(2)
-                                if (zDataSet.entryCount >= maxDataPoints) {
-                                    zDataSet.removeFirst()
-                                    for (i in 0 until zDataSet.entryCount) {
-                                        zDataSet.getEntryForIndex(i).x = i.toFloat()
-                                    }
-                                }
-                                accelData.addEntry(Entry(zDataSet.entryCount.toFloat(), zAccel), 2)
-
-                                accelChart!!.notifyDataSetChanged()
-                                accelChart!!.setVisibleXRangeMaximum(maxDataPoints.toFloat())
-                                accelChart!!.moveViewToX(accelData.entryCount.toFloat())
-                            }
+                            updateChart(accelChart, it.values, maxDataPoints)
                         } else if (it.sensor == mGyroscope) {
-                            val xGyro = it.values[0]
-                            val yGyro = it.values[1]
-                            val zGyro = it.values[2]
-
-                            val gyroData = gyroChart!!.data
-
-                            if (gyroData.dataSetCount > 0) {
-                                val xDataSet = gyroData.getDataSetByIndex(0)
-                                if (xDataSet.entryCount >= maxDataPoints) {
-                                    xDataSet.removeFirst()
-                                    for (i in 0 until xDataSet.entryCount) {
-                                        xDataSet.getEntryForIndex(i).x = i.toFloat()
-                                    }
-                                }
-                                gyroData.addEntry(Entry(xDataSet.entryCount.toFloat(), xGyro), 0)
-
-                                val yDataSet = gyroData.getDataSetByIndex(1)
-                                if (yDataSet.entryCount >= maxDataPoints) {
-                                    yDataSet.removeFirst()
-                                    for (i in 0 until yDataSet.entryCount) {
-                                        yDataSet.getEntryForIndex(i).x = i.toFloat()
-                                    }
-                                }
-                                gyroData.addEntry(Entry(yDataSet.entryCount.toFloat(), yGyro), 1)
-
-                                val zDataSet = gyroData.getDataSetByIndex(2)
-                                if (zDataSet.entryCount >= maxDataPoints) {
-                                    zDataSet.removeFirst()
-                                    for (i in 0 until zDataSet.entryCount) {
-                                        zDataSet.getEntryForIndex(i).x = i.toFloat()
-                                    }
-                                }
-                                gyroData.addEntry(Entry(zDataSet.entryCount.toFloat(), zGyro), 2)
-
-                                gyroChart!!.notifyDataSetChanged()
-                                gyroChart!!.setVisibleXRangeMaximum(maxDataPoints.toFloat())
-                                gyroChart!!.moveViewToX(gyroData.entryCount.toFloat())
-                            }
+                            updateChart(gyroChart, it.values, maxDataPoints)
                         }
                     }
                 }
@@ -171,14 +72,64 @@ class ChartActivity : AppCompatActivity() {
         }
     }
 
+    private fun initializeChart(chart: LineChart?, description: String) {
+        chart?.apply {
+            data = LineData()
+            axisRight.isEnabled = false
+            xAxis.isEnabled = false
+            axisLeft.setDrawLabels(true)
+            axisLeft.textColor = Color.WHITE
+            this.description.text = description
+            this.description.textColor = Color.WHITE
+            legend.textColor = Color.WHITE
+            val colors = listOf(Color.RED, Color.GREEN, Color.BLUE)
+            val labels = listOf("X", "Y", "Z")
+            for (i in labels.indices) {
+                val dataSet = LineDataSet(null, labels[i])
+                dataSet.color = colors[i]
+                dataSet.setDrawValues(false)
+                data.addDataSet(dataSet)
+            }
+        }
+    }
+
+    private fun updateChart(chart: LineChart?, values: FloatArray, maxDataPoints: Int) {
+        chart?.let {
+            adjustValues(values)
+            val data = it.data
+            for (i in values.indices) {
+                val dataSet = data.getDataSetByIndex(i)
+                if (dataSet.entryCount >= maxDataPoints) {
+                    dataSet.removeFirst()
+                    for (j in 0 until dataSet.entryCount) {
+                        dataSet.getEntryForIndex(j).x = j.toFloat()
+                    }
+                }
+                data.addEntry(Entry(dataSet.entryCount.toFloat(), values[i]), i)
+            }
+            data.notifyDataChanged()
+            it.notifyDataSetChanged()
+            it.setVisibleXRangeMaximum(maxDataPoints.toFloat())
+            it.moveViewToX(data.entryCount.toFloat())
+        }
+    }
+
     override fun onResume() {
         super.onResume()
-        sensorManager.registerListener(sensorEventListener, mAccelerometer,SensorManager.SENSOR_DELAY_NORMAL)
-        sensorManager.registerListener(sensorEventListener,mGyroscope,SensorManager.SENSOR_DELAY_NORMAL)
+        sensorManager.registerListener(sensorEventListener, mAccelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+        sensorManager.registerListener(sensorEventListener, mGyroscope, SensorManager.SENSOR_DELAY_NORMAL)
     }
 
     override fun onPause() {
         super.onPause()
         sensorManager.unregisterListener(sensorEventListener)
+    }
+
+    private fun adjustValues(values: FloatArray) {
+        for (i in values.indices) {
+            if (values[i] >= -0.5f && values[i] <= 0.5f) {
+                values[i] = 0f
+            }
+        }
     }
 }

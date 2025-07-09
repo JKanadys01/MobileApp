@@ -57,7 +57,16 @@ class MainActivity : AppCompatActivity() {
 
         chart_button.setOnClickListener{
             val intent = Intent(this, ChartActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             startActivity(intent)
+            finish()
+        }
+
+        gest_button.setOnClickListener{
+            val intent = Intent(this, GestureActivity::class.java)
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            startActivity(intent)
+            finish()
         }
 
         // Inicjalizacja sensorEventListener
@@ -66,41 +75,40 @@ class MainActivity : AppCompatActivity() {
                 // Sprawdzamy, z którego sensora pochodzą dane
                 when (event.sensor.type) {
                     Sensor.TYPE_ACCELEROMETER -> {
-                        // Handle accelerometer data
+                        // obsługa akcelerometru
                         val accX = event.values[0]
                         val accY = event.values[1]
                         val accZ = event.values[2]
 
                         changeAcc = Math.sqrt((accX * accX + accY * accY + accZ * accZ).toDouble())
                         totallmoveAcc = changeAcc/10
-                        // Update TextViews with accelerometer data
+                        // Aktualizacja TextView
                         acc_x_txt.text = "X: $accX"
                         acc_y_txt.text = "Y: $accY"
                         acc_z_txt.text = "Z: $accZ"
 
-                        // Update ProgressBar (if needed)
+                        // Aktualizacja movementbaru
                         progr_bar.setProgress(totallmoveAcc.toInt())
                     }
                     Sensor.TYPE_GYROSCOPE -> {
-                        // Handle gyroscope data
+                        // obsluga zyroskopu
                         val gyroX = event.values[0]
                         val gyroY = event.values[1]
                         val gyroZ = event.values[2]
                         totallmoveGyro = Math.sqrt((gyroX * gyroX + gyroY * gyroY + gyroZ * gyroZ).toDouble())
 
-                        // Update TextViews with gyroscope data
+                        // Aktualizacja TextView
                         gyro_x_txt.text = "X: $gyroX"
                         gyro_y_txt.text = "Y: $gyroY"
                         gyro_z_txt.text = "Z: $gyroZ"
 
-                        // Update ProgressBar (if needed)
+                        // Aktualizacja movementbaru
                         progr_bar.setProgress(totallmoveGyro.toInt())
                     }
                 }
             }
-
             override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-                // Handle accuracy changes if needed
+                // To jest nie potrzebne
             }
         }
     }
